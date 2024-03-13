@@ -1,8 +1,13 @@
-import {Tracer} from './instrumentation'
-const tracer = new Tracer()
-tracer.init()
+import {AppSpan, Instrumentor} from './instrumentation'
 import express from 'express';
-import {pg, Action} from './pg'
+import {Action, pg} from './pg'
+import {SpanKind} from "@opentelemetry/api";
+
+const tracer = new Instrumentor({
+  appName: 'dice-roll',
+  version: '1.0',
+})
+tracer.init()
 
 const app = express()
 
@@ -11,7 +16,12 @@ function rollDice(min: number, max: number) {
 }
 
 app.get('/rolldice', (req, res) => {
-  res.send(rollDice(1, 6).toString())
+  const dice = rollDice(1, 6)
+  const span = new AppSpan('rolldice')
+  span.setAttribute({'dice': dice})
+  res.status(200)
+  res.send(dice.toString())
+  span.endSpan()
 })
 app.get('/actions', async (req, res) => {
   res.json(await pg.select('*').from<Action>('action'))
