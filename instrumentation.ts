@@ -22,31 +22,35 @@ export interface InstrumentorConfig {
 }
 
 let instrumentorConfig: InstrumentorConfig;
+export function setInstrumentorConfig(config: InstrumentorConfig) {
+    instrumentorConfig = config
+}
+export function getInstrumentorConfig(): InstrumentorConfig {
+    return instrumentorConfig
+}
 
 export class Instrumentor {
     private sdk: NodeSDK | null = null;
     private readonly exporter: SpanExporter;
-    private provider : BasicTracerProvider;
+    private provider : BasicTracerProvider | undefined;
     constructor(config: InstrumentorConfig) {
-        instrumentorConfig = config
+        setInstrumentorConfig(config)
         this.exporter = new OTLPTraceExporter({url: 'http://localhost:4318/v1/traces'})
-        this.provider = new BasicTracerProvider({
-            resource: new Resource({
-                [SEMRESATTRS_SERVICE_NAME]: config.appName,
-                [SEMRESATTRS_SERVICE_VERSION]: config.version,
-            })
-        })
     }
 
     public init() {
+        const resource = Resource.default().merge(new Resource({
+            [SEMRESATTRS_SERVICE_NAME]: getInstrumentorConfig().appName,
+            [SEMRESATTRS_SERVICE_VERSION]: getInstrumentorConfig().version,
+        }))
+        this.provider = new BasicTracerProvider({
+            resource
+        })
         this.provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
         this.provider.addSpanProcessor(new SimpleSpanProcessor(this.exporter))
         this.provider.register()
         this.sdk = new NodeSDK({
-            resource: new Resource({
-                [SEMRESATTRS_SERVICE_NAME]: instrumentorConfig.appName,
-                [SEMRESATTRS_SERVICE_VERSION]: instrumentorConfig.version,
-            }),
+            resource: resource,
             traceExporter: this.exporter,
             metricReader: new PeriodicExportingMetricReader({
                 exporter: new ConsoleMetricExporter(),

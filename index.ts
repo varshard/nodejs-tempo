@@ -17,7 +17,7 @@ function rollDice(min: number, max: number) {
 
 app.get('/rolldice', (req, res) => {
   const dice = rollDice(1, 6)
-  const span = new AppSpan('rolldice')
+  const span = new AppSpan('rolldice', {kind: SpanKind.SERVER})
   span.setAttribute({'dice': dice})
   res.status(200)
   res.send(dice.toString())
