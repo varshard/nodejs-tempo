@@ -1,9 +1,10 @@
-import {AppSpan, Instrumentor} from './instrumentation'
+import {AppSpan} from './instrumentation'
+import {XrayInstrumentor} from './xray'
 import express from 'express';
-import {Action, pg} from './pg'
+// import {Action, pg} from './pg'
 import {SpanKind} from "@opentelemetry/api";
 
-const tracer = new Instrumentor({
+const tracer = new XrayInstrumentor({
   appName: 'dice-roll',
   version: '1.0',
 })
@@ -23,9 +24,9 @@ app.get('/rolldice', (req, res) => {
   res.send(dice.toString())
   span.endSpan()
 })
-app.get('/actions', async (req, res) => {
-  res.json(await pg.select('*').from<Action>('action'))
-})
+// app.get('/actions', async (req, res) => {
+//   res.json(await pg.select('*').from<Action>('action'))
+// })
 app.listen(3001, () => {
   console.log('listenting on 3001')
 })
